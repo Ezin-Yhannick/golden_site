@@ -1,0 +1,93 @@
+import { useState } from 'react'
+import { useSignupModal } from '../context/SignupModalContext'
+import { useAnalytics } from '../context/AnalyticsContext'
+
+export default function SignupModal() {
+  const { isOpen, close } = useSignupModal()
+  const { trackEvent } = useAnalytics()
+
+  const [fullname, setFullname] = useState('')
+  const [phone, setPhone] = useState('')
+  const [description, setDescription] = useState('')
+  const [error, setError] = useState('')
+
+  if (!isOpen) return null
+
+  const handleSubmit = () => {
+    if (!fullname.trim() || !phone.trim()) {
+      setError('Renseignez votre nom et votre numéro WhatsApp.')
+      return
+    }
+    setError('')
+    trackEvent('whatsapp_click')
+
+    const lines = [
+      `Bonjour Golden Boy, je m'appelle ${fullname}.`,
+      `Mon numéro WhatsApp : ${phone}.`,
+      description.trim() ? `Ce que je recherche : ${description.trim()}` : '',
+      `Je viens de m'inscrire à l'accompagnement e-commerce.`,
+    ].filter(Boolean)
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(lines.join(' '))}`, '_blank')
+
+    setFullname('')
+    setPhone('')
+    setDescription('')
+    close()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-ink/80 flex items-center justify-center px-6"
+      onClick={close}
+    >
+      <div
+        className="w-full max-w-md bg-panel border border-line p-8 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={close}
+          aria-label="Fermer"
+          className="absolute top-4 right-4 text-muted hover:text-gold text-sm"
+        >
+          ✕
+        </button>
+
+        <h2 className="font-display font-semibold text-2xl mb-6">Inscrivez-vous</h2>
+
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={fullname}
+            onChange={(e) => setFullname(e.target.value)}
+            placeholder="Votre prénom et nom"
+            className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold placeholder:text-[#5C5849]"
+          />
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Votre numéro WhatsApp"
+            className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold placeholder:text-[#5C5849]"
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Dites-nous ce que vous recherchez (optionnel)"
+            rows={3}
+            className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold placeholder:text-[#5C5849] resize-none"
+          />
+        </div>
+
+        {error && <p className="text-xs text-red-400 mt-3 text-left">{error}</p>}
+
+        <button
+          onClick={handleSubmit}
+          className="w-full mt-5 text-xs font-semibold tracking-wide px-5 py-3 bg-gold text-ink"
+        >
+          ENVOYER SUR WHATSAPP
+        </button>
+      </div>
+    </div>
+  )
+}

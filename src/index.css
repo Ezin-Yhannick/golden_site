@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer components {
+  .eyebrow {
+    @apply text-xs tracking-[0.14em] uppercase text-gold;
+  }
+}
