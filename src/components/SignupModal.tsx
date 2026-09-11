@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useSignupModal } from '../context/SignupModalContext'
 import { useAnalytics } from '../context/AnalyticsContext'
+import { supabase } from '../lib/supabaseClient'
+import { getVisitorLocation } from '../lib/geo'
 
 export default function SignupModal() {
   const { isOpen, close } = useSignupModal()
@@ -10,15 +12,29 @@ export default function SignupModal() {
   const [phone, setPhone] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
+  const [sending, setSending] = useState(false)
 
   if (!isOpen) return null
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!fullname.trim() || !phone.trim()) {
       setError('Renseignez votre nom et votre numéro WhatsApp.')
       return
     }
     setError('')
+    setSending(true)
+
+    const location = await getVisitorLocation()
+
+    // Enregistre la précommande (visible dans l'admin, avec un statut à suivre)
+    await supabase.from('signups').insert({
+      fullname,
+      phone,
+      description: description.trim() || null,
+      country: location.country ,
+      status: 'à payer',
+    })
+
     trackEvent('whatsapp_click')
 
     const lines = [
@@ -30,6 +46,7 @@ export default function SignupModal() {
 
     window.open(`https://wa.me/?text=${encodeURIComponent(lines.join(' '))}`, '_blank')
 
+    setSending(false)
     setFullname('')
     setPhone('')
     setDescription('')
@@ -83,9 +100,10 @@ export default function SignupModal() {
 
         <button
           onClick={handleSubmit}
-          className="w-full mt-5 text-xs font-semibold tracking-wide px-5 py-3 bg-gold text-ink"
+          disabled={sending}
+          className="w-full mt-5 text-xs font-semibold tracking-wide px-5 py-3 bg-gold text-ink disabled:opacity-50"
         >
-          ENVOYER SUR WHATSAPP
+          {sending ? 'ENVOI...' : 'ENVOYER SUR WHATSAPP'}
         </button>
       </div>
     </div>

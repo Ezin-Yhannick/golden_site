@@ -19,18 +19,9 @@ export default function Pricing() {
     <section id="tarif" className="border-t border-line">
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-16 md:py-24">
         <p className="eyebrow mb-4">Offre de lancement</p>
-        <div className="grid md:grid-cols-[1.2fr_0.8fr_1fr] gap-10 md:gap-8">
-          <div>
-            <h2 className="font-display font-semibold text-3xl md:text-4xl leading-[1.15] mb-6">
-              Investissez dans un système de vente qui vous appartient.
-            </h2>
-            <p className="text-muted text-sm leading-relaxed max-w-md">
-              Un apprentissage structuré, un accompagnement personnalisé et une communauté
-              privée accessible à vie.
-            </p>
-          </div>
+        <div className="grid md:grid-cols-[0.8fr_1.2fr_1fr] gap-10 md:gap-8">
 
-          <div className="border border-line p-6">
+          <div className="border border-line p-6 order-1">
             <p className="eyebrow mb-3">Tarif actuel</p>
             <div className="flex items-baseline gap-2 mb-1">
               <span className="font-display font-semibold text-3xl">50 000</span>
@@ -52,7 +43,20 @@ export default function Pricing() {
             </button>
           </div>
 
-          <Countdown targetDate={OFFER_END} />
+          <div className="order-2">
+            <h2 className="font-display font-semibold text-3xl md:text-4xl leading-[1.15] mb-6">
+              Investissez dans un système de vente qui vous appartient.
+            </h2>
+            <p className="text-muted text-sm leading-relaxed max-w-md">
+              Un apprentissage structuré, un accompagnement personnalisé et une communauté
+              privée accessible à vie.
+            </p>
+          </div>
+
+          <div className="order-3">
+            <Countdown targetDate={OFFER_END} />
+          </div>
+
         </div>
       </div>
     </section>

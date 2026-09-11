@@ -1,8 +1,15 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, ReactNode, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { getVisitorLocation } from '../lib/geo'
 
 interface DayCount {
   date: string
+  count: number
+}
+
+interface CountryStat {
+  country: string
+  countryCode: string
   count: number
 }
 
@@ -13,6 +20,7 @@ interface AnalyticsContextValue {
     totalViews: number
     events: Record<string, number>
     last7Days: DayCount[]
+    byCountry: CountryStat[]
   }>
 }
 
@@ -24,14 +32,17 @@ function todayKey(d: Date) {
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const trackPageView = useCallback(() => {
-    supabase.from('analytics_events').insert({ event_name: 'page_view' }).then()
+    getVisitorLocation().then(({ country, countryCode }) => {
+      supabase.from('analytics_events').insert({ event_name: 'page_view', country, country_code: countryCode }).then()
+    })
   }, [])
 
   const trackEvent = useCallback((name: string) => {
-    supabase.from('analytics_events').insert({ event_name: name }).then()
+    getVisitorLocation().then(({ country, countryCode }) => {
+      supabase.from('analytics_events').insert({ event_name: name, country, country_code: countryCode }).then()
+    })
   }, [])
 
-  // Réservé à l'admin (RLS : seuls les utilisateurs connectés peuvent lire ces lignes).
   const fetchStats = useCallback(async () => {
     const since = new Date()
     since.setDate(since.getDate() - 6)
@@ -39,15 +50,16 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from('analytics_events')
-      .select('event_name, created_at')
+      .select('event_name, country, country_code, created_at')
       .gte('created_at', since.toISOString())
 
     if (error || !data) {
-      return { totalViews: 0, events: {}, last7Days: [] }
+      return { totalViews: 0, events: {}, last7Days: [], byCountry: [] }
     }
 
     const events: Record<string, number> = {}
     const viewsByDay: Record<string, number> = {}
+    const countryCounts: Record<string, { count: number; code: string }> = {}
 
     for (const row of data) {
       events[row.event_name] = (events[row.event_name] || 0) + 1
@@ -55,6 +67,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         const key = todayKey(new Date(row.created_at))
         viewsByDay[key] = (viewsByDay[key] || 0) + 1
       }
+      const country = row.country || 'Inconnu'
+      if (!countryCounts[country]) countryCounts[country] = { count: 0, code: row.country_code || '' }
+      countryCounts[country].count += 1
     }
 
     const last7Days: DayCount[] = Array.from({ length: 7 }).map((_, i) => {
@@ -64,7 +79,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       return { date: key, count: viewsByDay[key] || 0 }
     })
 
-    return { totalViews: events.page_view || 0, events, last7Days }
+    const byCountry: CountryStat[] = Object.entries(countryCounts)
+      .map(([country, v]) => ({ country, countryCode: v.code, count: v.count }))
+      .sort((a, b) => b.count - a.count)
+
+    return { totalViews: events.page_view || 0, events, last7Days, byCountry }
   }, [])
 
   return (

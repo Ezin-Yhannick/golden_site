@@ -3,6 +3,8 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 import { useSiteContent } from '../context/SiteContentContext'
 import { useAnalytics } from '../context/AnalyticsContext'
+import { countryCodeToFlag } from '../lib/geo'
+   import PrecommandersTable from './PrecommandersTable'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -15,7 +17,10 @@ function LoginForm() {
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) setError('Email ou mot de passe incorrect.')
+    if (error) {
+      console.error('Erreur de connexion Supabase :', error)
+      setError(error.message)
+    }
   }
 
   return (
@@ -54,6 +59,18 @@ function LoginForm() {
   )
 }
 
+interface Signup {
+  id: string
+  fullname: string
+  phone: string
+  description: string | null
+  country: string | null
+  status: string
+  created_at: string
+}
+
+const STATUS_OPTIONS = ['à payer', 'en cours', 'payé', 'annulé']
+
 function Dashboard() {
   const { heroPhoto, results, uploadHeroPhoto, removeHeroPhoto, addResult, removeResult } =
     useSiteContent()
@@ -63,12 +80,28 @@ function Dashboard() {
     totalViews: number
     events: Record<string, number>
     last7Days: { date: string; count: number }[]
-  }>({ totalViews: 0, events: {}, last7Days: [] })
+    byCountry: { country: string; countryCode: string; count: number }[]
+  }>({ totalViews: 0, events: {}, last7Days: [], byCountry: [] })
   const [busy, setBusy] = useState(false)
+  const [signups, setSignups] = useState<Signup[]>([])
+
+  const fetchSignups = async () => {
+    const { data } = await supabase
+      .from('signups')
+      .select('*')
+      .order('created_at', { ascending: false })
+    setSignups(data || [])
+  }
 
   useEffect(() => {
     fetchStats().then(setStats)
+    fetchSignups()
   }, [fetchStats])
+
+  const updateStatus = async (id: string, status: string) => {
+    setSignups((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)))
+    await supabase.from('signups').update({ status }).eq('id', id)
+  }
 
   const handleHeroUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -149,7 +182,66 @@ function Dashboard() {
             )
           })}
         </div>
+
+        <p className="text-xs text-muted mt-8 mb-4">Visiteurs par pays</p>
+        {stats.byCountry.length === 0 ? (
+          <p className="text-sm text-muted">Pas encore de données.</p>
+        ) : (
+          <div>
+            {/* Podium : le pays n°1 mis en avant */}
+            <div className="border border-gold/40 bg-gradient-to-br from-[#1A160C] to-panel p-5 mb-4 flex items-center gap-4">
+              <span className="text-4xl leading-none">
+                {countryCodeToFlag(stats.byCountry[0].countryCode)}
+              </span>
+              <div className="flex-1">
+                <p className="eyebrow mb-1">Top pays</p>
+                <p className="font-display font-semibold text-xl">{stats.byCountry[0].country}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-display font-semibold text-2xl text-gold">
+                  {stats.byCountry[0].count}
+                </p>
+                <p className="text-xs text-muted">
+                  {Math.round(
+                    (stats.byCountry[0].count /
+                      stats.byCountry.reduce((sum, c) => sum + c.count, 0)) *
+                      100
+                  )}
+                  % du trafic
+                </p>
+              </div>
+            </div>
+
+            {/* Classement des autres pays */}
+            <div className="space-y-3">
+              {stats.byCountry.map((c, index) => {
+                const total = stats.byCountry.reduce((sum, x) => sum + x.count, 0)
+                const pct = Math.round((c.count / total) * 100)
+                return (
+                  <div key={c.country} className="flex items-center gap-3">
+                    <span className="text-xs text-muted w-4 shrink-0">{index + 1}</span>
+                    <span className="text-lg shrink-0">{countryCodeToFlag(c.countryCode)}</span>
+                    <span className="text-sm w-24 shrink-0 truncate">{c.country}</span>
+                    <div className="flex-1 h-2 bg-line overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#8A6A1F] to-gold transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted w-10 text-right">{c.count}</span>
+                    <span className="text-xs text-gold w-10 text-right">{pct}%</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </section>
+
+         <PrecommandersTable 
+     signups={signups} 
+     onStatusChange={updateStatus}
+   />
 
       <section className="border border-line p-6 mb-8">
         <p className="eyebrow mb-4">Photo hero</p>
