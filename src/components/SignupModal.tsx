@@ -11,6 +11,7 @@ export default function SignupModal() {
   const [fullname, setFullname] = useState('')
   const [phone, setPhone] = useState('')
   const [description, setDescription] = useState('')
+  const [gender, setGender] = useState<'homme' | 'femme' | ''>('')
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
 
@@ -19,6 +20,10 @@ export default function SignupModal() {
   const handleSubmit = async () => {
     if (!fullname.trim() || !phone.trim()) {
       setError('Renseignez votre nom et votre numéro WhatsApp.')
+      return
+    }
+    if (!gender) {
+      setError('Sélectionnez votre genre.')
       return
     }
     setError('')
@@ -31,7 +36,8 @@ export default function SignupModal() {
       fullname,
       phone,
       description: description.trim() || null,
-      country: location.country ,
+      country: location.country,
+      gender,
       status: 'à payer',
     })
 
@@ -50,6 +56,7 @@ export default function SignupModal() {
     setFullname('')
     setPhone('')
     setDescription('')
+    setGender('')
     close()
   }
 
@@ -87,6 +94,17 @@ export default function SignupModal() {
             placeholder="Votre numéro WhatsApp"
             className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold placeholder:text-[#5C5849]"
           />
+
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value as 'homme' | 'femme')}
+            className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold text-[#5C5849]"
+          >
+            <option value="">Sélectionnez votre genre</option>
+            <option value="homme" className="bg-panel">Homme</option>
+            <option value="femme" className="bg-panel">Femme</option>
+          </select>
+
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}

@@ -6,6 +6,7 @@ interface Signup {
   phone: string
   description: string | null
   country: string | null
+  gender: 'homme' | 'femme'
   status: string
   created_at: string
 }
@@ -31,8 +32,9 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
       const phoneMatch = signup.phone.toLowerCase().includes(query)
       const statusMatch = signup.status.toLowerCase().includes(query)
       const dateMatch = signup.created_at.includes(query)
+      const genderMatch = signup.gender.toLowerCase().includes(query)
 
-      return fullnameMatch || phoneMatch || statusMatch || dateMatch
+      return fullnameMatch || phoneMatch || statusMatch || dateMatch || genderMatch
     })
   }, [signups, searchQuery])
 
@@ -62,7 +64,7 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
         {/* Barre de recherche */}
         <input
           type="text"
-          placeholder="Rechercher par nom, numéro, date ou statut..."
+          placeholder="Rechercher par nom, numéro, date, genre ou statut..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-3 bg-transparent border border-line text-sm mb-4 placeholder:text-[#5C5849] focus:outline-none focus:border-gold"
@@ -86,6 +88,7 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
                 <th className="text-left py-3 px-4 font-display font-semibold">Nom et Prénoms</th>
                 <th className="text-left py-3 px-4 font-display font-semibold">Numéro</th>
                 <th className="text-left py-3 px-4 font-display font-semibold">Date d'inscription</th>
+                <th className="text-left py-3 px-4 font-display font-semibold">Genre</th>
                 <th className="text-left py-3 px-4 font-display font-semibold">Statut</th>
               </tr>
             </thead>
@@ -98,6 +101,11 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
                   </td>
                   <td className="py-3 px-4 text-muted">{signup.phone}</td>
                   <td className="py-3 px-4 text-muted">{formatDate(signup.created_at)}</td>
+                  <td className="py-3 px-4">
+                    <span className="text-xs px-2 py-1 bg-panel border border-line">
+                      {signup.gender === 'homme' ? 'H' : 'F'}
+                    </span>
+                  </td>
                   <td className="py-3 px-4">
                     <select
                       value={signup.status}

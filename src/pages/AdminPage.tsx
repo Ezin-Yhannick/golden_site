@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useSiteContent } from '../context/SiteContentContext'
 import { useAnalytics } from '../context/AnalyticsContext'
 import { countryCodeToFlag } from '../lib/geo'
-   import PrecommandersTable from './PrecommandersTable'
+import PrecommandersTable from './PrecommandersTable'
+import RevenueCounter from '../components/RevenueCounter'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -238,10 +239,15 @@ function Dashboard() {
         )}
       </section>
 
+      
+       <section className="mb-8">
+        <RevenueCounter signups={signups} />
+      </section>
+
          <PrecommandersTable 
-     signups={signups} 
-     onStatusChange={updateStatus}
-   />
+          signups={signups} 
+          onStatusChange={updateStatus}
+        />
 
       <section className="border border-line p-6 mb-8">
         <p className="eyebrow mb-4">Photo hero</p>
