@@ -4,10 +4,6 @@ import { useAnalytics } from '../context/AnalyticsContext'
 import { supabase } from '../lib/supabaseClient'
 import { getVisitorLocation } from '../lib/geo'
 
-// Numéro WhatsApp de Golden Boy, format international sans espaces ni "+"
-// (Bénin : indicatif 229 + préfixe 01 depuis nov. 2024 + numéro local)
-const WHATSAPP_NUMBER = '2290195961268'
-
 export default function SignupModal() {
   const { isOpen, close } = useSignupModal()
   const { trackEvent } = useAnalytics()
@@ -15,6 +11,7 @@ export default function SignupModal() {
   const [fullname, setFullname] = useState('')
   const [phone, setPhone] = useState('')
   const [description, setDescription] = useState('')
+  const [gender, setGender] = useState<'homme' | 'femme' | ''>('')
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
 
@@ -25,17 +22,22 @@ export default function SignupModal() {
       setError('Renseignez votre nom et votre numéro WhatsApp.')
       return
     }
+    if (!gender) {
+      setError('Sélectionnez votre genre.')
+      return
+    }
     setError('')
     setSending(true)
 
-    const { country } = await getVisitorLocation()
+    const location = await getVisitorLocation()
 
     // Enregistre la précommande (visible dans l'admin, avec un statut à suivre)
     await supabase.from('signups').insert({
       fullname,
       phone,
       description: description.trim() || null,
-      country,
+      country: location.country,
+      gender,
       status: 'à payer',
     })
 
@@ -48,15 +50,17 @@ export default function SignupModal() {
       `Je viens de m'inscrire à l'accompagnement e-commerce.`,
     ].filter(Boolean)
 
-    window.open(
-      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join(' '))}`,
-      '_blank'
-    )
+    // Numéro WhatsApp Golden Boy (format international : +229...)
+    const whatsappNumber = '229195961268'
+    const message = encodeURIComponent(lines.join(' '))
+
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
 
     setSending(false)
     setFullname('')
     setPhone('')
     setDescription('')
+    setGender('')
     close()
   }
 
@@ -94,6 +98,17 @@ export default function SignupModal() {
             placeholder="Votre numéro WhatsApp"
             className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold placeholder:text-[#5C5849]"
           />
+
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value as 'homme' | 'femme')}
+            className="w-full px-4 py-3 bg-transparent border border-line focus:outline-none focus:border-gold text-[#5C5849]"
+          >
+            <option value="">Sélectionnez votre genre</option>
+            <option value="homme" className="bg-panel">Homme</option>
+            <option value="femme" className="bg-panel">Femme</option>
+          </select>
+
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
