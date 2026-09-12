@@ -67,7 +67,7 @@ interface Signup {
   phone: string
   description: string | null
   country: string | null
-  gender: 'homme' | 'femme' 
+  gender: 'homme' | 'femme'
   status: string
   created_at: string
 }
@@ -75,8 +75,20 @@ interface Signup {
 const STATUS_OPTIONS = ['à payer', 'en cours', 'payé', 'annulé']
 
 function Dashboard() {
-  const { heroPhoto, results, uploadHeroPhoto, removeHeroPhoto, addResult, removeResult } =
-    useSiteContent()
+  const {
+    hero_photo_url: heroPhoto,
+    results,
+    uploadHeroPhoto,
+    removeHeroPhoto,
+    addResult,
+    removeResult,
+    price_current,
+    price_original,
+    price_women,
+    ad_budget,
+    whatsapp_number,
+    updateContent,
+  } = useSiteContent()
   const { fetchStats } = useAnalytics()
 
   const [stats, setStats] = useState<{
@@ -87,6 +99,21 @@ function Dashboard() {
   }>({ totalViews: 0, events: {}, last7Days: [], byCountry: [] })
   const [busy, setBusy] = useState(false)
   const [signups, setSignups] = useState<Signup[]>([])
+
+  const [settingsDraft, setSettingsDraft] = useState({
+    price_current,
+    price_original,
+    price_women,
+    ad_budget,
+    whatsapp_number,
+  })
+  const [settingsSaved, setSettingsSaved] = useState(false)
+
+  const handleSaveSettings = async () => {
+    await updateContent(settingsDraft)
+    setSettingsSaved(true)
+    setTimeout(() => setSettingsSaved(false), 2000)
+  }
 
   const fetchSignups = async () => {
     const { data } = await supabase
@@ -149,6 +176,68 @@ function Dashboard() {
       </div>
 
       <section className="border border-line p-6 mb-8">
+        <p className="eyebrow mb-4">Réglages</p>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs text-muted mb-1">Prix actuel (FCFA)</label>
+            <input
+              type="text"
+              value={settingsDraft.price_current}
+              onChange={(e) => setSettingsDraft((d) => ({ ...d, price_current: e.target.value }))}
+              className="w-full px-3 py-2 bg-transparent border border-line text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Prix barré / original (FCFA)</label>
+            <input
+              type="text"
+              value={settingsDraft.price_original}
+              onChange={(e) => setSettingsDraft((d) => ({ ...d, price_original: e.target.value }))}
+              className="w-full px-3 py-2 bg-transparent border border-line text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Tarif femmes (FCFA)</label>
+            <input
+              type="text"
+              value={settingsDraft.price_women}
+              onChange={(e) => setSettingsDraft((d) => ({ ...d, price_women: e.target.value }))}
+              className="w-full px-3 py-2 bg-transparent border border-line text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Budget pub (FCFA)</label>
+            <input
+              type="text"
+              value={settingsDraft.ad_budget}
+              onChange={(e) => setSettingsDraft((d) => ({ ...d, ad_budget: e.target.value }))}
+              className="w-full px-3 py-2 bg-transparent border border-line text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs text-muted mb-1">
+              Numéro WhatsApp (format international, sans espaces ni +)
+            </label>
+            <input
+              type="text"
+              value={settingsDraft.whatsapp_number}
+              onChange={(e) => setSettingsDraft((d) => ({ ...d, whatsapp_number: e.target.value }))}
+              placeholder="ex: 2290195961268"
+              className="w-full px-3 py-2 bg-transparent border border-line text-sm focus:outline-none focus:border-gold"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSaveSettings}
+          className="text-xs font-semibold tracking-wide px-5 py-3 bg-gold text-ink"
+        >
+          {settingsSaved ? 'ENREGISTRÉ ✓' : 'ENREGISTRER'}
+        </button>
+      </section>
+
+      <section className="border border-line p-6 mb-8">
         <p className="eyebrow mb-4">Statistiques (tous visiteurs confondus)</p>
 
         <div className="grid grid-cols-3 gap-3 mb-8">
@@ -191,7 +280,6 @@ function Dashboard() {
           <p className="text-sm text-muted">Pas encore de données.</p>
         ) : (
           <div>
-            {/* Podium : le pays n°1 mis en avant */}
             <div className="border border-gold/40 bg-gradient-to-br from-[#1A160C] to-panel p-5 mb-4 flex items-center gap-4">
               <span className="text-4xl leading-none">
                 {countryCodeToFlag(stats.byCountry[0].countryCode)}
@@ -215,7 +303,6 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Classement des autres pays */}
             <div className="space-y-3">
               {stats.byCountry.map((c, index) => {
                 const total = stats.byCountry.reduce((sum, x) => sum + x.count, 0)
@@ -241,17 +328,13 @@ function Dashboard() {
         )}
       </section>
 
-      
-       <section className="mb-8">
+      <section className="mb-8">
         <RevenueCounter signups={signups} />
       </section>
 
       <RevenueChart signups={signups} />
 
-         <PrecommandersTable 
-          signups={signups} 
-          onStatusChange={updateStatus}
-        />
+      <PrecommandersTable signups={signups} onStatusChange={updateStatus} />
 
       <section className="border border-line p-6 mb-8">
         <p className="eyebrow mb-4">Photo hero</p>

@@ -21,7 +21,7 @@ const FEATURES = [
 ]
 
 export default function Hero() {
-  const { heroPhoto } = useSiteContent()
+  const { hero_photo_url: heroPhoto } = useSiteContent()
   const { open } = useSignupModal()
   const { trackEvent } = useAnalytics()
 

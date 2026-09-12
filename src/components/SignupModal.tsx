@@ -3,6 +3,7 @@ import { useSignupModal } from '../context/SignupModalContext'
 import { useAnalytics } from '../context/AnalyticsContext'
 import { supabase } from '../lib/supabaseClient'
 import { getVisitorLocation } from '../lib/geo'
+import { useSiteContent } from '../context/SiteContentContext'
 
 export default function SignupModal() {
   const { isOpen, close } = useSignupModal()
@@ -51,10 +52,10 @@ export default function SignupModal() {
     ].filter(Boolean)
 
     // Numéro WhatsApp Golden Boy (format international : +229...)
-    const whatsappNumber = '2290195961268'
+    const { whatsapp_number } = useSiteContent()
     const message = encodeURIComponent(lines.join(' '))
 
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
+    window.open(`https://wa.me/${whatsapp_number}?text=${message}`, '_blank')
 
     setSending(false)
     setFullname('')

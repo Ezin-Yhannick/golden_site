@@ -6,14 +6,32 @@ export interface ResultItem {
   url: string
 }
 
-interface SiteContentContextValue {
-  heroPhoto: string | null
+export interface SiteContentFields {
+  hero_photo_url: string | null
+  price_current: string
+  price_original: string
+  price_women: string
+  ad_budget: string
+  whatsapp_number: string
+}
+
+interface SiteContentContextValue extends SiteContentFields {
   results: ResultItem[]
   loading: boolean
   uploadHeroPhoto: (file: File) => Promise<void>
   removeHeroPhoto: () => Promise<void>
   addResult: (file: File) => Promise<void>
   removeResult: (id: string) => Promise<void>
+  updateContent: (fields: Partial<SiteContentFields>) => Promise<void>
+}
+
+const DEFAULT_CONTENT: SiteContentFields = {
+  hero_photo_url: null,
+  price_current: '50 000',
+  price_original: '100 000',
+  price_women: '40 000',
+  ad_budget: '15 000',
+  whatsapp_number: '2290195961268',
 }
 
 const SiteContentContext = createContext<SiteContentContextValue | null>(null)
@@ -28,16 +46,20 @@ async function uploadToStorage(file: File, folder: string): Promise<string> {
 }
 
 export function SiteContentProvider({ children }: { children: ReactNode }) {
-  const [heroPhoto, setHeroPhotoState] = useState<string | null>(null)
+  const [content, setContent] = useState<SiteContentFields>(DEFAULT_CONTENT)
   const [results, setResults] = useState<ResultItem[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchAll = async () => {
-    const [{ data: content }, { data: resultRows }] = await Promise.all([
-      supabase.from('site_content').select('hero_photo_url').eq('id', 1).single(),
+    const [{ data: row }, { data: resultRows }] = await Promise.all([
+      supabase
+        .from('site_content')
+        .select('hero_photo_url, price_current, price_original, price_women, ad_budget, whatsapp_number')
+        .eq('id', 1)
+        .single(),
       supabase.from('results').select('id, image_url').order('created_at', { ascending: false }),
     ])
-    setHeroPhotoState(content?.hero_photo_url ?? null)
+    if (row) setContent({ ...DEFAULT_CONTENT, ...row })
     setResults((resultRows ?? []).map((r) => ({ id: r.id, url: r.image_url })))
     setLoading(false)
   }
@@ -58,17 +80,19 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const updateContent = async (fields: Partial<SiteContentFields>) => {
+    const { error } = await supabase.from('site_content').update(fields).eq('id', 1)
+    if (error) throw error
+    setContent((prev) => ({ ...prev, ...fields }))
+  }
+
   const uploadHeroPhoto = async (file: File) => {
     const url = await uploadToStorage(file, 'hero')
-    const { error } = await supabase.from('site_content').update({ hero_photo_url: url }).eq('id', 1)
-    if (error) throw error
-    setHeroPhotoState(url)
+    await updateContent({ hero_photo_url: url })
   }
 
   const removeHeroPhoto = async () => {
-    const { error } = await supabase.from('site_content').update({ hero_photo_url: null }).eq('id', 1)
-    if (error) throw error
-    setHeroPhotoState(null)
+    await updateContent({ hero_photo_url: null })
   }
 
   const addResult = async (file: File) => {
@@ -86,7 +110,16 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
 
   return (
     <SiteContentContext.Provider
-      value={{ heroPhoto, results, loading, uploadHeroPhoto, removeHeroPhoto, addResult, removeResult }}
+      value={{
+        ...content,
+        results,
+        loading,
+        uploadHeroPhoto,
+        removeHeroPhoto,
+        addResult,
+        removeResult,
+        updateContent,
+      }}
     >
       {children}
     </SiteContentContext.Provider>
