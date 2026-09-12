@@ -51,7 +51,7 @@ export default function SignupModal() {
     ].filter(Boolean)
 
     // Numéro WhatsApp Golden Boy (format international : +229...)
-    const whatsappNumber = '229195961268'
+    const whatsappNumber = '2290195961268'
     const message = encodeURIComponent(lines.join(' '))
 
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank')
