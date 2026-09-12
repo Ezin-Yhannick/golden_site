@@ -8,6 +8,7 @@ import { useSiteContent } from '../context/SiteContentContext'
 export default function SignupModal() {
   const { isOpen, close } = useSignupModal()
   const { trackEvent } = useAnalytics()
+  const { whatsapp_number } = useSiteContent()
 
   const [fullname, setFullname] = useState('')
   const [phone, setPhone] = useState('')
@@ -52,7 +53,7 @@ export default function SignupModal() {
     ].filter(Boolean)
 
     // Numéro WhatsApp Golden Boy (format international : +229...)
-    const { whatsapp_number } = useSiteContent()
+  
     const message = encodeURIComponent(lines.join(' '))
 
     window.open(`https://wa.me/${whatsapp_number}?text=${message}`, '_blank')
