@@ -67,6 +67,7 @@ interface Signup {
   phone: string
   description: string | null
   country: string | null
+  gender: 'homme' | 'femme' 
   status: string
   created_at: string
 }
