@@ -5,6 +5,7 @@ import { useSiteContent } from '../context/SiteContentContext'
 import { useAnalytics } from '../context/AnalyticsContext'
 import { countryCodeToFlag } from '../lib/geo'
 import PrecommandersTable from './PrecommandersTable'
+import RevenueChart from '../components/RevenueChart'
 import RevenueCounter from '../components/RevenueCounter'
 
 function LoginForm() {
@@ -243,6 +244,8 @@ function Dashboard() {
        <section className="mb-8">
         <RevenueCounter signups={signups} />
       </section>
+
+      <RevenueChart signups={signups} />
 
          <PrecommandersTable 
           signups={signups} 
