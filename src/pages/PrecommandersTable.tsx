@@ -20,51 +20,46 @@ interface PrecommandersTableProps {
 
 export default function PrecommandersTable({ signups, onStatusChange }: PrecommandersTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('') // '' = tous les statuts
+  const [statusFilter, setStatusFilter] = useState<string>('Tous')
 
-  // Filtrer par statut et par recherche
   const filteredSignups = useMemo(() => {
-    let filtered = signups
+    let list = signups
 
-    // 1️⃣ Filtre par statut
-    if (statusFilter) {
-      filtered = filtered.filter((s) => s.status === statusFilter)
+    if (statusFilter !== 'Tous') {
+      list = list.filter((s) => s.status === statusFilter)
     }
 
-    // 2️⃣ Filtre par recherche
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
-      filtered = filtered.filter((signup) => {
+      list = list.filter((signup) => {
         const fullnameMatch = signup.fullname.toLowerCase().includes(query)
         const phoneMatch = signup.phone.toLowerCase().includes(query)
         const statusMatch = signup.status.toLowerCase().includes(query)
         const dateMatch = signup.created_at.includes(query)
         const genderMatch = signup.gender.toLowerCase().includes(query)
-
         return fullnameMatch || phoneMatch || statusMatch || dateMatch || genderMatch
       })
     }
 
-    return filtered
+    return list
   }, [signups, searchQuery, statusFilter])
+
+  const countByStatus = useMemo(() => {
+    const counts: Record<string, number> = { Tous: signups.length }
+    for (const opt of STATUS_OPTIONS) {
+      counts[opt] = signups.filter((s) => s.status === opt).length
+    }
+    return counts
+  }, [signups])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     })
   }
-
-  // Compter les précommandes par statut
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    STATUS_OPTIONS.forEach((status) => {
-      counts[status] = signups.filter((s) => s.status === status).length
-    })
-    return counts
-  }, [signups])
 
   if (signups.length === 0) {
     return (
@@ -80,6 +75,23 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
       <div className="mb-6">
         <p className="eyebrow mb-4">Précommandes ({signups.length})</p>
 
+        {/* Filtre par statut */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {['Tous', ...STATUS_OPTIONS].map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setStatusFilter(opt)}
+              className={`text-xs font-semibold px-3 py-2 border transition-all ${
+                statusFilter === opt
+                  ? 'bg-gold text-ink border-gold'
+                  : 'bg-transparent text-muted border-line hover:border-gold hover:text-gold'
+              }`}
+            >
+              {opt} ({countByStatus[opt] ?? 0})
+            </button>
+          ))}
+        </div>
+
         {/* Barre de recherche */}
         <input
           type="text"
@@ -89,36 +101,7 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
           className="w-full px-4 py-3 bg-transparent border border-line text-sm mb-4 placeholder:text-[#5C5849] focus:outline-none focus:border-gold"
         />
 
-        {/* Filtres par statut */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button
-            onClick={() => setStatusFilter('')}
-            className={`text-xs font-semibold px-3 py-2 border transition-all ${
-              statusFilter === ''
-                ? 'bg-gold text-ink border-gold'
-                : 'bg-transparent text-muted border-line hover:border-gold hover:text-gold'
-            }`}
-          >
-            Tous ({signups.length})
-          </button>
-
-          {STATUS_OPTIONS.map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`text-xs font-semibold px-3 py-2 border transition-all ${
-                statusFilter === status
-                  ? 'bg-gold text-ink border-gold'
-                  : 'bg-transparent text-muted border-line hover:border-gold hover:text-gold'
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)} ({statusCounts[status]})
-            </button>
-          ))}
-        </div>
-
-        {/* Compteur des résultats */}
-        {(searchQuery || statusFilter) && (
+        {(searchQuery || statusFilter !== 'Tous') && (
           <p className="text-xs text-muted mb-3">
             {filteredSignups.length} résultat{filteredSignups.length !== 1 ? 's' : ''} sur {signups.length}
           </p>
@@ -126,7 +109,7 @@ export default function PrecommandersTable({ signups, onStatusChange }: Precomma
       </div>
 
       {filteredSignups.length === 0 ? (
-        <p className="text-sm text-muted">Aucun résultat ne correspond à votre recherche.</p>
+        <p className="text-sm text-muted">Aucun résultat ne correspond à ces critères.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
